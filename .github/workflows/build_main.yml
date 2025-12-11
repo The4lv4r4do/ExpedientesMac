@@ -1,0 +1,44 @@
+name: Compilar para MacOS
+
+# Se ejecuta manualmente (botón) o cada vez que subes cambios a la rama 'main'
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: macos-latest  # ¡Aquí está la magia! Usamos una Mac virtual
+
+    steps:
+    - name: Descargar código del repositorio
+      uses: actions/checkout@v4
+
+    - name: Configurar Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11' # Pon la versión que uses (3.9, 3.10, 3.11, etc.)
+
+    - name: Instalar dependencias
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install pyinstaller
+
+    - name: Crear Ejecutable con PyInstaller
+      # --windowed: Para que sea una App de mac y no abra consola negra
+      # --onefile: (Opcional) Intenta meter todo en un archivo, pero en Mac suele ser mejor dejarlo como carpeta .app
+      # Reemplaza 'tu_script_principal.py' por el nombre real de tu archivo
+      run: |
+        pyinstaller --name "MiAplicacion" --windowed --clean --noconfirm tu_script_principal.py
+
+    - name: Empaquetar en ZIP (Para evitar problemas de permisos)
+      run: |
+        cd dist
+        zip -r MiAplicacion_Mac.zip MiAplicacion.app
+
+    - name: Subir el archivo resultante (Artifact)
+      uses: actions/upload-artifact@v4
+      with:
+        name: App-MacOS-Ejecutable
+        path: dist/MiAplicacion_Mac.zip
