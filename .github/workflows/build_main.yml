@@ -1,4 +1,4 @@
-name: Compilar para MacOS
+name: Compilar para MacOS (Compatible Big Sur)
 
 # Se ejecuta manualmente (botón) o cada vez que subes cambios a la rama 'main'
 on:
@@ -8,7 +8,9 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest  # ¡Aquí está la magia! Usamos una Mac virtual
+    # Usamos 'macos-13' (Intel) en lugar de 'latest'.
+    # Esto asegura que la App funcione en Macs Intel viejas y en Macs M1/M2/M3 nuevas (vía Rosetta).
+    runs-on: macos-13
 
     steps:
     - name: Descargar código del repositorio
@@ -17,7 +19,7 @@ jobs:
     - name: Configurar Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11' # Pon la versión que uses (3.9, 3.10, 3.11, etc.)
+        python-version: '3.13' # Pon la versión que uses (3.9, 3.10, 3.11, etc.)
 
     - name: Instalar dependencias
       run: |
@@ -28,17 +30,20 @@ jobs:
     - name: Crear Ejecutable con PyInstaller
       # --windowed: Para que sea una App de mac y no abra consola negra
       # --onefile: (Opcional) Intenta meter todo en un archivo, pero en Mac suele ser mejor dejarlo como carpeta .app
-      # Reemplaza 'tu_script_principal.py' por el nombre real de tu archivo
+      # 'env' define la versión MÍNIMA de macOS necesaria. Ponemos '11.0' para cubrir Big Sur.
+      env:
+        MACOSX_DEPLOYMENT_TARGET: '11.0'
       run: |
-        pyinstaller --name "MiAplicacion" --windowed --clean --noconfirm tu_script_principal.py
+        # Añadimos --target-arch x86_64 para asegurar arquitectura Intel
+        pyinstaller --name "Expedientes_V4" --windowed --clean --noconfirm --target-arch x86_64 main.py
 
-    - name: Empaquetar en ZIP (Para evitar problemas de permisos)
+    - name: Empaquetar en ZIP
       run: |
         cd dist
-        zip -r MiAplicacion_Mac.zip MiAplicacion.app
+        zip -r Expedientes_V4_Mac.zip Expedientes_V4.app
 
-    - name: Subir el archivo resultante (Artifact)
+    - name: Subir el archivo resultante
       uses: actions/upload-artifact@v4
       with:
         name: App-MacOS-Ejecutable
-        path: dist/MiAplicacion_Mac.zip
+        path: dist/Expedientes_V4_Mac.zip
